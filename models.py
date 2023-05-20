@@ -1,7 +1,5 @@
 from cmath import sqrt
 
-sgl = 1e-3
-
 
 class Point:
     x: float
@@ -16,12 +14,17 @@ class Point:
         self.number = number
 
     def __eq__(self, other):
-        return abs(self.x - other.x) < sgl and abs(self.y - other.y) < sgl and abs(self.z - other.z) < sgl
-        # return self.number == other.number
+        # sgl = 1e-3
+        # return abs(self.x - other.x) < sgl and abs(self.y - other.y) < sgl and abs(self.z - other.z) < sgl
+        return self.number == other.number
         # return self.x == other.x and self.y == other.y and self.z == other.z
 
     def __repr__(self):
         return f"{self.x} {self.y} {self.z}"
+
+    @staticmethod
+    def __nonzero__():
+        return True
 
     def __sub__(self, other):
         return Vector(self.x - other.x, self.y - other.y, self.z - other.z)
@@ -92,19 +95,33 @@ class Triangle:
 
 
 class Grid:
-    points: list[Point] = []
-    triangles: list[Triangle] = []
-    n_points: int = 0
-    n_triangles: int = 0
+    points: list[Point]
+    triangles: list[Triangle]
+    n_points: int
+    n_triangles: int
+
+    def __init__(self):
+        self.points = []
+        self.triangles = []
+        self.n_points = 0
+        self.n_triangles = 0
 
     def add_point(self, point: Point):
-        self.n_points += 1
+        for i in self.points:
+            if i == point:
+                return i
+
         point.number = self.n_points
+        self.n_points += 1
         self.points.append(point)
 
         return point
 
     def add_triangle(self, triangle: Triangle):
+        for i in self.triangles:
+            if i == triangle:
+                return i
+
         triangle.A = self.add_point(triangle.A)
         triangle.B = self.add_point(triangle.B)
         triangle.C = self.add_point(triangle.C)
@@ -151,6 +168,8 @@ class Grid:
                 file.write('5\n')
 
             print(f'Записано {self.n_triangles} треугольников')
+
+        return
 
 # TR = Triangle(Point(0, 0, 0), Point(1, 0, 0), Point(0, 1, 0))
 # P = Point(1 / 2, 1 / 1.2, 0)

@@ -65,14 +65,16 @@ def intersect(first: Triangle, second: Triangle, eps=1e-4):
 
     M3 = second.B + second.b * T3
 
-    if first.isInTriangle(M1, eps):
-        return True
+    res = []
+    if -eps < T1 < 1 + eps and first.isInTriangle(M1, eps):
+        res.append(M1)
+    if -eps < T2 < 1 + eps and first.isInTriangle(M2, eps):
+        res.append(M2)
+    if -eps < T3 < 1 + eps and first.isInTriangle(M3, eps):
+        res.append(M3)
 
-    if first.isInTriangle(M2, eps):
-        return True
-
-    if first.isInTriangle(M3, eps):
-        return True
+    if len(res) > 0:
+        return res
 
     return False
 
