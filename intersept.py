@@ -48,35 +48,32 @@ def intersect(first: Triangle, second: Triangle, eps=1e-4):
     Q3 = ((first.B.x - first.A.x) * (first.C.y - first.A.y) - (first.B.y - first.A.y) * (first.C.x - first.A.x))
 
     T1 = ((second.A.x - first.A.x) * Q1 - (second.A.y - first.A.y) * Q2 + (second.A.z - first.A.z) * Q3) / (
-            (second.A.x - second.B.x) * Q1 - (second.A.y - second.B.y) * Q2 + (second.A.z - second.B.z) * Q3 + eps / 2
+            (second.A.x - second.B.x) * Q1 - (second.A.y - second.B.y) * Q2 + (second.A.z - second.B.z) * Q3 + eps / 100
     )
 
     M1 = second.A + second.a * T1
 
     T2 = ((second.B.x - first.A.x) * Q1 - (second.B.y - first.A.y) * Q2 + (second.B.z - first.A.z) * Q3) / (
-            (second.B.x - second.C.x) * Q1 - (second.B.y - second.C.y) * Q2 + (second.B.z - second.C.z) * Q3 + eps / 2
+            (second.B.x - second.C.x) * Q1 - (second.B.y - second.C.y) * Q2 + (second.B.z - second.C.z) * Q3 + eps / 100
     )
 
     M2 = second.B + second.b * T2
 
     T3 = ((second.C.x - first.A.x) * Q1 - (second.C.y - first.A.y) * Q2 + (second.C.z - first.A.z) * Q3) / (
-            (second.C.x - second.A.x) * Q1 - (second.C.y - second.A.y) * Q2 + (second.C.z - second.A.z) * Q3 + eps / 2
+            (second.C.x - second.A.x) * Q1 - (second.C.y - second.A.y) * Q2 + (second.C.z - second.A.z) * Q3 + eps / 100
     )
 
     M3 = second.B + second.b * T3
 
-    res = []
+    res = {}
     if -eps < T1 < 1 + eps and first.isInTriangle(M1, eps):
-        res.append(M1)
+        res['a'] = M1
     if -eps < T2 < 1 + eps and first.isInTriangle(M2, eps):
-        res.append(M2)
+        res['b'] = M2
     if -eps < T3 < 1 + eps and first.isInTriangle(M3, eps):
-        res.append(M3)
+        res['c'] = M3
 
-    if len(res) > 0:
-        return res
-
-    return False
+    return res or False
 
 
 def main():
