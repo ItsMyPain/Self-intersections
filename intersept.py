@@ -63,7 +63,7 @@ def intersect(first: Triangle, second: Triangle, eps=1e-4):
             (second.C.x - second.A.x) * Q1 - (second.C.y - second.A.y) * Q2 + (second.C.z - second.A.z) * Q3 + eps / 100
     )
 
-    M3 = second.B + second.b * T3
+    M3 = second.C + second.c * T3
 
     res = {}
     if -eps < T1 < 1 + eps and first.isInTriangle(M1, eps):

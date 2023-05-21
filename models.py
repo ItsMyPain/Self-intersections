@@ -1,4 +1,6 @@
-from cmath import sqrt
+from math import sqrt
+
+import vtk
 
 
 class Point:
@@ -14,13 +16,13 @@ class Point:
         self.number = number
 
     def __eq__(self, other):
-        # sgl = 1e-3
-        # return abs(self.x - other.x) < sgl and abs(self.y - other.y) < sgl and abs(self.z - other.z) < sgl
-        return self.number == other.number
+        sgl = 1e-3
+        return abs(self.x - other.x) < sgl and abs(self.y - other.y) < sgl and abs(self.z - other.z) < sgl
+        # return self.number == other.number
         # return self.x == other.x and self.y == other.y and self.z == other.z
 
     def __repr__(self):
-        return f"{self.x} {self.y} {self.z}"
+        return f"Point_N{self.number}({self.x} {self.y} {self.z})"
 
     @staticmethod
     def __nonzero__():
@@ -47,7 +49,13 @@ class Vector:
         return sqrt(self.x ** 2 + self.y ** 2 + self.z ** 2)
 
     def __mul__(self, other):
-        return Vector(self.x * other, self.y * other, self.z * other)
+        if isinstance(other, Vector):
+            return self.x * other.x + self.y * other.y + self.z * other.z
+        else:
+            return Vector(self.x * other, self.y * other, self.z * other)
+
+    def __truediv__(self, other):
+        return Vector(self.x / other, self.y / other, self.z / other)
 
     def __add__(self, other):
         return Point(self.x + other.x, self.y + other.y, self.z + other.z)
@@ -79,10 +87,10 @@ class Triangle:
         return self.A == other.A or self.A == other.B or self.A == other.C or self.B == other.A or self.B == other.B or self.B == other.C or self.C == other.A or self.C == other.B or self.C == other.C
 
     def area(self):
-        a = abs(self.a)
-        b = abs(self.b)
-        c = abs(self.c)
-        return sqrt((a + b + c) * (- a + b + c) * (a - b + c) * (a + b - c)) / 4
+        a_ = abs(self.a)
+        b_ = abs(self.b)
+        c_ = abs(self.c)
+        return sqrt((a_ + b_ + c_) * (- a_ + b_ + c_) * (a_ - b_ + c_) * (a_ + b_ - c_)) / 4
 
     def isInTriangle(self, point: Point, eps=1e-2):
         S0 = self.area()
@@ -171,9 +179,117 @@ class Grid:
 
         return
 
+
+class FastGrid:
+    triangles: list[Triangle]
+
+    def __init__(self):
+        self.triangles = []
+
+    def fast_add_triangle(self, triangle: Triangle):
+        self.triangles.append(triangle)
+
+    def load_from_file(self, filename: str):
+        n = 0
+        points = []
+        with open(filename, 'r', encoding='UTF-8') as file:
+            for i in range(4):
+                file.readline()
+            n_points = int(file.readline().split()[1])
+            for i in range(n_points):
+                line = list(map(float, file.readline().split()))
+                points.append(Point(line[0], line[1], line[2], n))
+                n += 1
+
+            print(f'Загружено {n_points} точек')
+
+            n_triangles = int(file.readline().split()[1])
+            for i in range(n_triangles):
+                line = list(map(int, file.readline().split()[1:]))
+                self.triangles.append(Triangle(points[line[0]], points[line[1]], points[line[2]]))
+
+            print(f'Загружено {n_triangles} треугольников')
+
+    def save_to_file(self, filename: str):
+        n_triangles = len(self.triangles)
+        points = []
+        triangles = []
+        for i in self.triangles:
+            for j in self.triangles:
+                if i.A == j.A:
+                    j.A.number = i.A.number
+                if i.A == j.B:
+                    j.A.number = i.B.number
+                if i.A == j.C:
+                    j.A.number = i.C.number
+                if i.B == j.A:
+                    j.B.number = i.A.number
+
+        with open(filename, 'w', encoding='UTF-8') as file:
+            file.write(
+                f'# vtk DataFile Version 3.0\n{filename.split(".")[0]}.stl\nASCII\nDATASET UNSTRUCTURED_GRID\nPOINTS {self.n_points} double\n')
+            for i in self.points:
+                file.write(f'{i.x} {i.y} {i.z}\n')
+
+            print(f'Записано {self.n_points} точек')
+
+            file.write(f'CELLS {n_triangles} {n_triangles * 4}\n')
+            for i in self.triangles:
+                file.write(f'3 {i.A.number} {i.B.number} {i.C.number}\n')
+
+            file.write(f'CELL_TYPES {n_triangles} \n')
+            for _ in range(n_triangles):
+                file.write('5\n')
+
+            print(f'Записано {n_triangles} треугольников')
+
+        return
+
+
+def visualize(filename: str):
+    colors = vtk.vtkNamedColors()
+
+    reader = vtk.vtkUnstructuredGridReader()
+    reader.SetFileName(filename)
+    reader.Update()
+    output = reader.GetOutput()
+
+    mapper = vtk.vtkDataSetMapper()
+    mapper.SetInputData(output)
+    mapper.ScalarVisibilityOn()
+
+    actor = vtk.vtkActor()
+    actor.SetMapper(mapper)
+    actor.GetProperty().EdgeVisibilityOn()
+    actor.GetProperty().SetLineWidth(2.0)
+    actor.GetProperty().VertexVisibilityOn()
+    actor.GetProperty().SetMetallic(1)
+    actor.GetProperty().RenderPointsAsSpheresOn()
+    actor.GetProperty().SetColor(colors.GetColor3d("MistyRose"))
+
+    renderer = vtk.vtkRenderer()
+    renderer.AddActor(actor)
+    renderer.SetBackground(colors.GetColor3d('Wheat'))
+
+    renderer_window = vtk.vtkRenderWindow()
+    renderer_window.SetSize(640, 480)
+    renderer_window.AddRenderer(renderer)
+    renderer_window.SetWindowName('ReadUnstructuredGrid')
+
+    interactor = vtk.vtkRenderWindowInteractor()
+    interactor.SetRenderWindow(renderer_window)
+    interactor.Initialize()
+    interactor.Start()
+
+#
 # TR = Triangle(Point(0, 0, 0), Point(1, 0, 0), Point(0, 1, 0))
-# P = Point(1 / 2, 1 / 1.2, 0)
-# print(TR.isInTriangle(P))
+# TR1 = Triangle(Point(0, 0, 0), Point(1, 0, 0), Point(0, -1, 0))
 # a = Grid()
 # a.load_from_file('cube.vtk')
+# a.add_triangle(TR)
+# print(a.points)
+# a.add_triangle(TR1)
+# print(a.points)
+#
 # a.save_to_file('out.vtk')
+# visualize('out.vtk')
