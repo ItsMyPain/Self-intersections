@@ -76,22 +76,3 @@ def intersect(first: Triangle, second: Triangle, eps=1e-4):
     return res or False
 
 
-def main():
-    # Open asd parse file
-
-    res = []
-    stop = 10
-    try:
-        for first in triangles:
-            for second in triangles:
-                bl = intersect(first, second)
-                if bl:
-                    res.append(first)
-                    res.append(second)
-                    print('Найден')
-                if len(res) == stop:
-                    break
-    except KeyboardInterrupt:
-        pass
-    finally:
-        return res

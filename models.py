@@ -1,7 +1,5 @@
 from math import sqrt
 
-import vtk
-
 
 class Point:
     x: float
@@ -16,10 +14,13 @@ class Point:
         self.number = number
 
     def __eq__(self, other):
-        sgl = 1e-3
+        sgl = 1e-7
         return abs(self.x - other.x) < sgl and abs(self.y - other.y) < sgl and abs(self.z - other.z) < sgl
         # return self.number == other.number
         # return self.x == other.x and self.y == other.y and self.z == other.z
+
+    def isSame(self, other):
+        return self.number == other.number
 
     def __repr__(self):
         return f"Point_N{self.number}({self.x} {self.y} {self.z})"
@@ -80,6 +81,9 @@ class Triangle:
     def __eq__(self, other):
         return self.A == other.A and self.B == other.B and self.C == other.C
 
+    def isSame(self, other):
+        return self.A.isSame(other.A) and self.B.isSame(other.B) and self.C.isSame(other.C)
+
     def __repr__(self):
         return f"{self.A.number} {self.B.number} {self.C.number}"
 
@@ -90,7 +94,7 @@ class Triangle:
         a_ = abs(self.a)
         b_ = abs(self.b)
         c_ = abs(self.c)
-        return sqrt((a_ + b_ + c_) * (- a_ + b_ + c_) * (a_ - b_ + c_) * (a_ + b_ - c_)) / 4
+        return sqrt(abs((a_ + b_ + c_) * (-a_ + b_ + c_) * (a_ - b_ + c_) * (a_ + b_ - c_))) / 4
 
     def isInTriangle(self, point: Point, eps=1e-2):
         S0 = self.area()
@@ -125,6 +129,18 @@ class Grid:
 
         return point
 
+    def copy_point(self, point: Point):
+        point.number = self.n_points
+        self.n_points += 1
+        self.points.append(point)
+
+        return point
+
+    def dell_triangle(self, triangle: Triangle):
+        self.triangles.remove(triangle)
+        self.n_triangles -= 1
+        return triangle
+
     def add_triangle(self, triangle: Triangle):
         for i in self.triangles:
             if i == triangle:
@@ -133,6 +149,15 @@ class Grid:
         triangle.A = self.add_point(triangle.A)
         triangle.B = self.add_point(triangle.B)
         triangle.C = self.add_point(triangle.C)
+        self.triangles.append(triangle)
+        self.n_triangles += 1
+
+        return triangle
+
+    def copy_triangle(self, triangle: Triangle):
+        triangle.A = self.copy_point(triangle.A)
+        triangle.B = self.copy_point(triangle.B)
+        triangle.C = self.copy_point(triangle.C)
         self.triangles.append(triangle)
         self.n_triangles += 1
 
@@ -245,43 +270,6 @@ class FastGrid:
 
         return
 
-
-def visualize(filename: str):
-    colors = vtk.vtkNamedColors()
-
-    reader = vtk.vtkUnstructuredGridReader()
-    reader.SetFileName(filename)
-    reader.Update()
-    output = reader.GetOutput()
-
-    mapper = vtk.vtkDataSetMapper()
-    mapper.SetInputData(output)
-    mapper.ScalarVisibilityOn()
-
-    actor = vtk.vtkActor()
-    actor.SetMapper(mapper)
-    actor.GetProperty().EdgeVisibilityOn()
-    actor.GetProperty().SetLineWidth(2.0)
-    actor.GetProperty().VertexVisibilityOn()
-    actor.GetProperty().SetMetallic(1)
-    actor.GetProperty().RenderPointsAsSpheresOn()
-    actor.GetProperty().SetColor(colors.GetColor3d("MistyRose"))
-
-    renderer = vtk.vtkRenderer()
-    renderer.AddActor(actor)
-    renderer.SetBackground(colors.GetColor3d('Wheat'))
-
-    renderer_window = vtk.vtkRenderWindow()
-    renderer_window.SetSize(640, 480)
-    renderer_window.AddRenderer(renderer)
-    renderer_window.SetWindowName('ReadUnstructuredGrid')
-
-    interactor = vtk.vtkRenderWindowInteractor()
-    interactor.SetRenderWindow(renderer_window)
-    interactor.Initialize()
-    interactor.Start()
-
-#
 # TR = Triangle(Point(0, 0, 0), Point(1, 0, 0), Point(0, 1, 0))
 # TR1 = Triangle(Point(0, 0, 0), Point(1, 0, 0), Point(0, -1, 0))
 # a = Grid()
